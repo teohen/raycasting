@@ -1,7 +1,6 @@
 package player
 
 import (
-	"fmt"
 	"image/color"
 	"math"
 
@@ -16,20 +15,20 @@ var CONE_COLOR = color.RGBA{200, 200, 200, 100}
 const RAYS_COUNT = 300
 const CONE_ANGLE = math.Pi / 2
 
+type PlayerSprite struct {
+	Circle *canvas.Circle
+	tLine  *canvas.Line
+	rLine  *canvas.Line
+	lLine  *canvas.Line
+}
+
 type Player struct {
 	Size   vector2.Vector2
 	Pos    vector2.Vector2
 	Dir    float64
 	Color  color.Color
-	Sprite *canvas.Circle
+	Sprite *PlayerSprite
 	Rays   []*ray.Ray
-}
-
-func (p *Player) debug() {
-	fmt.Println("Size :", p.Size)
-	fmt.Println("Pos :", p.Pos)
-	fmt.Println("Dir :", p.Dir)
-	fmt.Println("Color :", p.Color)
 }
 
 func NewPlayer(size, pos vector2.Vector2, dir float64) Player {
@@ -41,12 +40,18 @@ func NewPlayer(size, pos vector2.Vector2, dir float64) Player {
 		Color: color.RGBA{255, 0, 0, 255},
 	}
 
-	p.Sprite = canvas.NewCircle(color.RGBA{255, 0, 0, 255})
+	pSprite := PlayerSprite{
+		Circle: canvas.NewCircle(color.RGBA{255, 0, 0, 255}),
+		rLine:  canvas.NewLine(color.RGBA{255, 0, 0, 255}),
+		lLine:  canvas.NewLine(color.RGBA{255, 0, 0, 255}),
+		tLine:  canvas.NewLine(color.RGBA{255, 0, 0, 255}),
+	}
+
+	p.Sprite = &pSprite
 
 	v := vector2.Vector2{X: 0, Y: 0}
 
 	rayDir := dir - (CONE_ANGLE / 2)
-
 	for i := 0; i < RAYS_COUNT; i++ {
 		ray := ray.NewRay(v, v, rayDir, 1)
 		rayDir = rayDir - CONE_ANGLE/(RAYS_COUNT-1)
@@ -58,7 +63,10 @@ func NewPlayer(size, pos vector2.Vector2, dir float64) Player {
 
 func (p *Player) GetSprites() []fyne.CanvasObject {
 	var sprites = make([]fyne.CanvasObject, 0)
-	sprites = append(sprites, p.Sprite)
+	sprites = append(sprites, p.Sprite.Circle)
+	sprites = append(sprites, p.Sprite.lLine)
+	sprites = append(sprites, p.Sprite.rLine)
+	sprites = append(sprites, p.Sprite.tLine)
 	for _, ray := range p.Rays {
 		sprites = append(sprites, ray.GetSprites())
 	}
@@ -84,6 +92,11 @@ func renderCircle(c *canvas.Circle, size, from, to vector2.Vector2, cColor color
 	c.Position2 = fyne.Position(to.To32())
 	c.FillColor = cColor
 }
+func renderLine(l *canvas.Line, from, to vector2.Vector2) {
+	l.Position1 = fyne.Position(from.To32())
+	l.Position2 = fyne.Position(to.To32())
+	l.StrokeColor = color.RGBA{255, 0, 0, 255}
+}
 
 func getCenterPoint(c *canvas.Circle) vector2.Vector2 {
 	cSize := c.Position2.Subtract(c.Position1)
@@ -107,14 +120,13 @@ func findPointInCircle(c *canvas.Circle, dir float64, scale float64) vector2.Vec
 }
 
 func calcRayDir(pDir float64, count int) vector2.Vector2 {
-
 	finalAngle := pDir - (CONE_ANGLE / 2) + (CONE_ANGLE/(RAYS_COUNT-1))*float64(count)
 	v := vector2.Vector2{}
 	return v.FromAngle(finalAngle)
 }
 
 func (p *Player) renderRays() {
-	from := getCenterPoint(p.Sprite)
+	from := getCenterPoint(p.Sprite.Circle)
 	for i, ray := range p.Rays {
 		ray.SetDir(calcRayDir(p.Dir, i))
 		ray.SetFrom(from)
@@ -123,13 +135,22 @@ func (p *Player) renderRays() {
 }
 
 func (p *Player) Render() {
-	renderCircle(p.Sprite, p.Size, p.Pos, p.Pos.Sum(p.Size), p.Color)
+	c := getCenterPoint(p.Sprite.Circle)
+	rLineTo := findPointInCircle(p.Sprite.Circle, (p.Dir - (CONE_ANGLE / 2)), 3)
+	lLineTo := findPointInCircle(p.Sprite.Circle, (p.Dir + (CONE_ANGLE / 2)), 3)
+	renderCircle(p.Sprite.Circle, p.Size, p.Pos, p.Pos.Sum(p.Size), p.Color)
+	renderLine(p.Sprite.lLine, c, rLineTo)
+	renderLine(p.Sprite.rLine, c, lLineTo)
+	renderLine(p.Sprite.tLine, rLineTo, lLineTo)
 	p.renderRays()
 }
 
 func (p *Player) Refresh() {
 	p.Render()
-	p.Sprite.Refresh()
+	p.Sprite.Circle.Refresh()
+	p.Sprite.lLine.Refresh()
+	p.Sprite.rLine.Refresh()
+	p.Sprite.tLine.Refresh()
 }
 
 func (p *Player) GetRays() []*ray.Ray {

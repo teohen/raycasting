@@ -28,7 +28,7 @@ type Wall struct {
 }
 
 func NewRay(from, to vector2.Vector2, dir float64, len float64) Ray {
-	line := canvas.NewLine(color.White)
+	line := canvas.NewLine(color.RGBA{0, 0, 255, 0})
 	line.StrokeWidth = 1
 
 	v := vector2.Vector2{}
@@ -82,18 +82,18 @@ func (r *Ray) GetSprites() *canvas.Line {
 func (r *Ray) Cast() {
 	from := r.from
 	to := getPoint(r.from, r.dir, r.from)
-	hit := 0
-	for hit == 0 {
+	for {
 		to = getPoint(from, r.dir, r.from)
 		from = to
 
 		x, y := getCellIdxs(to, r.from)
-		if global.GetWorldCellContent(y, x) > 0 {
-			hit = 1
+		if global.GetWorldCellContent(y, x) > 0 || !global.InsideGame(to) {
+			break
 		}
+
 	}
 
-	if to.X == 0 && to.Y == 0 {
+	if !global.InsideGame(to) {
 		to = r.from
 	}
 	r.to = to

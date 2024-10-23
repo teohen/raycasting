@@ -1,8 +1,6 @@
 package global
 
 import (
-	"image/color"
-
 	vector2 "github.com/teohen/FPV/vector"
 )
 
@@ -12,30 +10,30 @@ type Global struct {
 
 const WINDOW_HEIGHT = 800
 const WINDOW_WIDTH = 800
-const WALL_HEIGHT = WINDOW_HEIGHT * 0.8
-const WALL_HEIGHT_MARGIN = WINDOW_HEIGHT * 0.3
 
-var WALL_COLOR = color.RGBA{128, 128, 128, 255}
-var EMPTY_COLOR = color.RGBA{18, 18, 18, 255}
-var BORDER_COLOR = color.RGBA{80, 80, 80, 255}
+const WALL_HEIGHT = WINDOW_HEIGHT * 0.5
+const WALL_HEIGHT_MARGIN = WINDOW_HEIGHT * 0.3
 
 const CELL_W = 40
 const CELL_H = 40
+
+var PADDING_X = float64(0)
+var PADDING_Y = float64(0)
 
 var global Global
 
 func NewGlobal() Global {
 	global = Global{World: [][]uint8{
-		{1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-		{1, 0, 0, 0, 0, 1, 1, 0, 0, 1},
-		{1, 0, 0, 0, 0, 1, 1, 0, 0, 1},
-		{1, 0, 0, 0, 0, 1, 1, 0, 0, 1},
-		{1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-		{1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-		{1, 0, 0, 0, 1, 0, 0, 0, 0, 1},
-		{1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-		{1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-		{1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 1, 1, 1, 1, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
+		{0, 0, 0, 0, 0, 0, 1, 1, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	}}
 
 	return global
@@ -49,15 +47,29 @@ func GetGlobal() Global {
 }
 
 func GetWorldCellContent(x, y int) uint8 {
-	if x > len(global.World[0])-1 || y < 0 {
+	//TODO REMOVE HARDCODED
+	if x > 9 || y > 9 || x < 0 || y < 0 {
 		return 1
 	}
 	return global.World[x][y]
 }
 
 func InsideGame(p vector2.Vector2) bool {
-	if 0 <= p.X && p.X <= WINDOW_WIDTH && 0 <= p.Y && p.Y <= WINDOW_HEIGHT {
-		return true
+	if p.X == 0 || p.X == float64(len(global.World)*CELL_W) {
+		return false
 	}
-	return false
+
+	if p.Y == 0 || p.Y == float64(len(global.World)*CELL_H) {
+		return false
+	}
+
+	return true
+}
+
+func GetPadX(x float64) float64 {
+	return x + PADDING_X
+}
+
+func GetPadY(y float64) float64 {
+	return y + PADDING_Y
 }
