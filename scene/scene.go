@@ -10,7 +10,7 @@ import (
 )
 
 var PADDING_X = 180
-var PADDING_Y = float64(180)
+var PADDING_Y = float64(120)
 
 type Scence struct {
 	player *player.Player
@@ -53,9 +53,9 @@ func (s *Scence) RenderScene() {
 		var r, g, b, a uint8
 		r, g, b, a = 0, 0, 0, 0
 		if length > 0 {
-			r = uint8(30 + length*0.4)
-			g = uint8(30 + length*0.4)
-			b = uint8(30 + length*0.4)
+			r = uint8(30 + length*0.3)
+			g = uint8(30 + length*0.3)
+			b = uint8(30 + length*0.3)
 			a = uint8(255)
 		}
 		line.StrokeColor = color.RGBA{r, g, b, a}
