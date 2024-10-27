@@ -4,69 +4,58 @@ import (
 	"image/color"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"github.com/teohen/FPV/global"
 	"github.com/teohen/FPV/player"
+	vector2 "github.com/teohen/FPV/vector"
 )
 
-var PADDING_X = 180
-var PADDING_Y = float64(120)
-
 type Scence struct {
-	player *player.Player
-	lines  []*canvas.Line
+	player  *player.Player
+	stripes []*SceneLine
 }
 
 func (sc *Scence) GetSprites() []fyne.CanvasObject {
 	var sprites = make([]fyne.CanvasObject, 0)
-	for _, line := range sc.lines {
-		sprites = append(sprites, line)
+	for _, line := range sc.stripes {
+		sprites = append(sprites, line.GetSprite())
 	}
 	return sprites
 }
 
 func NewScene(p *player.Player) Scence {
 	scene := Scence{player: p}
+	v := vector2.Vector2{}
 
 	for range p.Rays {
-		scene.lines = append(scene.lines, canvas.NewLine(color.White))
+		scene.stripes = append(scene.stripes, NewSceneLine(v, v, color.White, 1))
 	}
+
 	return scene
 }
 
-func (s *Scence) RenderScene() {
-	lw := global.WINDOW_WIDTH / len(s.lines)
-	for i, line := range s.lines {
-		ray := s.player.Rays[i]
-
-		rl := ray.CalcLength(s.player.Dir)
-		length := global.WALL_HEIGHT
-		if rl > 0 {
-			length -= rl
-		} else {
-			length = rl
-		}
-		line.Position1.X = float32(int(PADDING_X) + (i * lw))
-		line.Position1.Y = float32(PADDING_Y + (global.WALL_HEIGHT-length)*0.5)
-		line.Position2.X = float32(int(PADDING_X) + (i * lw))
-		line.Position2.Y = float32(PADDING_Y + length)
-		var r, g, b, a uint8
-		r, g, b, a = 0, 0, 0, 0
-		if length > 0 {
-			r = uint8(30 + length*0.3)
-			g = uint8(30 + length*0.3)
-			b = uint8(30 + length*0.3)
-			a = uint8(255)
-		}
-		line.StrokeColor = color.RGBA{r, g, b, a}
-		line.StrokeWidth = float32(lw)
+func calcLength(rayLenght float64) float64 {
+	if rayLenght > 0 {
+		return global.WALL_HEIGHT - rayLenght
 	}
+	return rayLenght
+}
 
+func (s *Scence) RenderScene() {
+	lw := global.WINDOW_WIDTH / len(s.stripes)
+	for i, line := range s.stripes {
+		ray := s.player.Rays[i]
+		length := calcLength(ray.CalcLength(s.player.Dir))
+		line.setFrom(length, i, lw)
+		line.setTo(length, i, lw)
+		line.setColor(length)
+		line.setWidth(lw)
+		line.render()
+	}
 	s.Refresh()
 }
 
 func (s *Scence) Refresh() {
-	for _, line := range s.lines {
-		line.Refresh()
+	for _, line := range s.stripes {
+		line.GetSprite().Refresh()
 	}
 }

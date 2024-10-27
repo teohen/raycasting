@@ -2,16 +2,14 @@ package ray
 
 import (
 	"image/color"
-	"math"
 
-	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"github.com/teohen/FPV/draw"
 	"github.com/teohen/FPV/global"
 	vector2 "github.com/teohen/FPV/vector"
 )
 
-const CELL_W = 40
-const CELL_H = 40
+var RAY_COLOR = color.RGBA{0, 0, 255, 255}
 
 type Ray struct {
 	from   vector2.Vector2
@@ -19,181 +17,132 @@ type Ray struct {
 	dir    vector2.Vector2
 	len    float64
 	sprite *canvas.Line
+	color  color.Color
+	right  Wall
+	left   Wall
+	top    Wall
+	bottom Wall
 }
 
-type Wall struct {
-	From vector2.Vector2
-	To   vector2.Vector2
-	Name string
-}
-
-func NewRay(from, to vector2.Vector2, dir float64, len float64) Ray {
-	line := canvas.NewLine(color.RGBA{0, 0, 255, 0})
+func NewRay(from, to, dir vector2.Vector2, len float64) Ray {
+	line := canvas.NewLine(RAY_COLOR)
 	line.StrokeWidth = 1
 
-	v := vector2.Vector2{}
 	ray := Ray{
 		from:   from,
 		to:     to,
-		dir:    v.FromAngle(dir),
+		dir:    dir,
 		len:    len,
 		sprite: line,
+		color:  RAY_COLOR,
 	}
 
 	return ray
 }
 
-func (r *Ray) GetFrom() vector2.Vector2 {
-	return r.from
+func (r *Ray) GetFrom() *vector2.Vector2 {
+	return &r.from
 }
 
-func (r *Ray) SetFrom(from vector2.Vector2) {
-	r.from = from
+func (r *Ray) SetFrom(from *vector2.Vector2) {
+	r.from = *from
 }
 
-func (r *Ray) GetTo() vector2.Vector2 {
-	return r.to
+func (r *Ray) GetTo() *vector2.Vector2 {
+	return &r.to
 }
 
-func (r *Ray) SetTo(to vector2.Vector2) {
-	r.to = to
+func (r *Ray) SetTo(to *vector2.Vector2) {
+	r.to = *to
 }
 
-func (r *Ray) GetDir() vector2.Vector2 {
-	return r.dir
+func (r *Ray) GetDir() *vector2.Vector2 {
+	return &r.dir
 }
 
-func (r *Ray) SetDir(dir vector2.Vector2) {
-	r.dir = dir
+func (r *Ray) SetDir(dir *vector2.Vector2) {
+	r.dir = *dir
 }
 
 func (r *Ray) GetSprite() *canvas.Line {
 	return r.sprite
 }
 
-func (r *Ray) DetSprite(line *canvas.Line) {
-	r.sprite = line
-}
-
-func (r *Ray) GetSprites() *canvas.Line {
-	return r.sprite
-}
-
 func (r *Ray) Cast() {
 	from := r.from
-	to := getPoint(r.from, r.dir, r.from)
+	to := r.getHittingPoint(r.from)
 	for {
-		to = getPoint(from, r.dir, r.from)
-		from = to
+		to = r.getHittingPoint(from)
+		from = *to
 
-		x, y := getCellIdxs(to, r.from)
-		if global.GetWorldCellContent(y, x) > 0 || !global.InsideGame(to) {
+		x, y := global.GetXY(*to, r.from)
+		if global.GetWorldCellContent(y, x) > 0 || !global.InsideGame(*to) {
 			break
 		}
-
 	}
-
-	if !global.InsideGame(to) {
-		to = r.from
+	if !global.InsideGame(*to) {
+		to = &r.from
 	}
-	r.to = to
-
+	r.to = *to
 	r.Render()
-
 }
 
-func getPoint(from, dir, origin vector2.Vector2) vector2.Vector2 {
-	walls := getWalls(from, origin)
-	for _, wall := range walls {
-		x1 := wall.From.X
-		y1 := wall.From.Y
-		x2 := wall.To.X
-		y2 := wall.To.Y
-
-		x3 := from.X
-		y3 := from.Y
-
-		x4 := from.X + dir.X
-		y4 := from.Y + dir.Y
-
-		den := (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4)
-		if den == 0 {
+func (r *Ray) getHittingPoint(from vector2.Vector2) *vector2.Vector2 {
+	v := vector2.Vector2{}
+	for _, wall := range r.updateWalls(from, r.from).wallsInSlice() {
+		p := vector2.LineToLineIntersection(wall.from, wall.to, from, r.dir)
+		if p == nil {
 			continue
 		}
-
-		t := ((x1-x3)*(y3-y4) - (y1-y3)*(x3-x4)) / den
-		u := -((x1-x2)*(y1-y3) - (y1-y2)*(x1-x3)) / den
-
-		if t >= 0 && t <= 1 && u > 0 {
-			return vector2.Vector2{
-				X: x1 + t*(x2-x1),
-				Y: y1 + t*(y2-y1),
-			}
-		} else {
-			continue
-		}
+		v = *p
 	}
+	return &v
 
-	return vector2.Vector2{}
 }
 
 func (r *Ray) Render() {
-	r.sprite.Position1 = fyne.Position(r.from.To32())
-	r.sprite.Position2 = fyne.Position(r.to.To32())
+	draw.Line(r.sprite, r.from, r.to, r.color, 1)
 }
 
-func getCellIdxs(pos, origin vector2.Vector2) (int, int) {
-	x := math.Floor(pos.X / CELL_W)
-	y := math.Floor(pos.Y / CELL_H)
+func (r *Ray) updateWalls(from, origin vector2.Vector2) *Ray {
+	x, y := global.GetXY(from, origin)
 
-	if math.Mod(pos.X, CELL_W) == 0 && pos.X < origin.X {
-		x -= 1
-	}
-	if math.Mod(pos.Y, CELL_H) == 0 && pos.Y < origin.Y {
-		y -= 1
-	}
+	right := float64(global.CELL_W + x*global.CELL_W)
+	left := float64(global.CELL_W + (x * global.CELL_W) - global.CELL_W)
+	top := float64(global.CELL_H + (y * global.CELL_H) - global.CELL_H)
+	bottom := float64(global.CELL_H + y*global.CELL_H)
 
-	return int(x), int(y)
+	r.right = *NewWall(
+		vector2.Vector2{X: right, Y: top},
+		vector2.Vector2{X: right, Y: bottom},
+	)
+
+	r.left = *NewWall(
+		vector2.Vector2{X: left, Y: top},
+		vector2.Vector2{X: left, Y: bottom},
+	)
+
+	r.top = *NewWall(
+		vector2.Vector2{X: left, Y: top},
+		vector2.Vector2{X: right, Y: top},
+	)
+
+	r.bottom = *NewWall(
+		vector2.Vector2{X: left, Y: bottom},
+		vector2.Vector2{X: right, Y: bottom},
+	)
+
+	return r
 }
 
-func getWalls(from, origin vector2.Vector2) []Wall {
-	x, y := getCellIdxs(from, origin)
-
-	cellpadw := CELL_W
-	cellpadh := CELL_H
-	r := float64(cellpadw + x*CELL_W)
-	l := float64(cellpadw + (x * CELL_W) - CELL_W)
-	t := float64(cellpadh + (y * CELL_H) - CELL_H)
-	b := float64(cellpadh + y*CELL_H)
-
-	rLine := Wall{
-		From: vector2.Vector2{X: r, Y: t},
-		To:   vector2.Vector2{X: r, Y: b},
-		Name: "right",
-	}
-	lLine := Wall{
-		From: vector2.Vector2{X: l, Y: t},
-		To:   vector2.Vector2{X: l, Y: b},
-		Name: "left",
-	}
-	tLine := Wall{
-		From: vector2.Vector2{X: l, Y: t},
-		To:   vector2.Vector2{X: r, Y: t},
-		Name: "top",
-	}
-	bLine := Wall{
-		From: vector2.Vector2{X: l, Y: b},
-		To:   vector2.Vector2{X: r, Y: b},
-		Name: "bottom",
-	}
-	return []Wall{rLine, lLine, tLine, bLine}
+func (r *Ray) wallsInSlice() [4]*Wall {
+	return [4]*Wall{&r.right, &r.left, &r.top, &r.bottom}
 }
 
 func (r *Ray) CalcLength(dir float64) float64 {
-	vec := vector2.Vector2{}
 	to := r.GetTo()
-	v := to.Sub(r.GetFrom())
-
-	d := vec.FromAngle(dir)
-	return v.Dot(d)
+	d := vector2.FromAngle(dir)
+	rFrom := r.GetFrom()
+	v := to.Sub(rFrom).Dot(d)
+	return v
 }

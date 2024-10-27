@@ -22,9 +22,9 @@ func main() {
 	a := app.New()
 	w := a.NewWindow("First Person Viewer")
 
-	minimap := minimap.NewMiniMap(global.GetGlobal().World)
+	minimap := minimap.NewMiniMap(global.GetWorld())
 	sc := scene.NewScene(minimap.Player)
-	minimap.Draw()
+	minimap.Render()
 
 	cont := container.NewWithoutLayout()
 	for _, sprite := range sc.GetSprites() {
@@ -50,8 +50,8 @@ func main() {
 	})
 
 	go func() {
-		for range time.Tick(time.Millisecond * 33) {
-			minimap.Player.Refresh()
+		for range time.Tick((time.Millisecond * 33 * 1) / 2) {
+			go minimap.Player.Refresh()
 			sc.RenderScene()
 		}
 	}()

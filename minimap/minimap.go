@@ -2,10 +2,10 @@ package minimap
 
 import (
 	"image/color"
-	"math"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"github.com/teohen/FPV/draw"
 	"github.com/teohen/FPV/global"
 	"github.com/teohen/FPV/player"
 	vector2 "github.com/teohen/FPV/vector"
@@ -16,8 +16,7 @@ var WALL_COLOR = color.RGBA{120, 120, 120, opacity}
 var EMPTY_COLOR = color.RGBA{18, 18, 18, opacity}
 var BORDER_COLOR = color.RGBA{80, 80, 80, opacity}
 
-const CELL_W = 40
-const CELL_H = 40
+var cell = vector2.Vector2{X: global.CELL_W, Y: global.CELL_H}
 
 type MiniMap struct {
 	World   [][]uint8
@@ -27,57 +26,56 @@ type MiniMap struct {
 
 func NewMiniMap(world [][]uint8) *MiniMap {
 	player := player.NewPlayer(
-		vector2.Vector2{X: 20, Y: 20},
-		vector2.Vector2{X: global.GetPadX(40), Y: global.GetPadY(100)},
-		(math.Pi)/2,
+		global.PLAYER_SIZE,
+		global.PLAYER_START_POS,
+		global.PLAYER_START_DIR,
 	)
 	minimap := MiniMap{World: world, Player: &player}
 	return &minimap
 }
 
-func (mm *MiniMap) Draw() {
-	mm.drawCells()
-	mm.drawPlayer()
+func (mm *MiniMap) Render() {
+	mm.renderMap()
+	mm.renderPlayer()
 }
 
-func (mm *MiniMap) drawPlayer() {
+func (mm *MiniMap) renderPlayer() {
+	mm.Player.Render()
 	for _, canvasObj := range mm.Player.GetSprites() {
 		mm.AddSprites(canvasObj)
 	}
-	mm.Player.Render()
 }
 
-func (mm *MiniMap) drawCells() {
-	cell := vector2.Vector2{X: CELL_W, Y: CELL_H}
+func (mm *MiniMap) renderMap() {
 	for i := 0; i < len(mm.World); i += 1 {
 		for j := 0; j < len(mm.World[i]); j += 1 {
-			var cellColor color.RGBA
-			if mm.World[j][i] != 0 {
-				cellColor = WALL_COLOR
-			} else {
-				cellColor = EMPTY_COLOR
-			}
-			cellPos := vector2.Vector2{
-				X: global.GetPadX(cell.X * float64(i)),
-				Y: global.GetPadY(cell.Y * float64(j)),
-			}
-			mm.drawRect(cell, cellPos, cellColor, BORDER_COLOR, 2)
+			color := getColor(mm.World[j][i])
+			pos := getPos(i, j)
+			mm.renderRect(cell, pos, color, BORDER_COLOR, 0)
 		}
 	}
 }
-func (mm *MiniMap) drawRect(size, pos vector2.Vector2, rectColor, borderColor color.Color, borderWidth float64) {
-	if borderWidth > 0 {
-		mm.drawRect(size, pos, borderColor, borderColor, 0)
-		size = size.SubtracBy(borderWidth)
-		pos = pos.SumBy(borderWidth / 2)
-	}
-	rect := canvas.NewRectangle(rectColor)
 
-	rect.Resize(fyne.NewSize(float32(size.X), float32(size.Y)))
-	rect.Move(fyne.NewPos(float32(pos.X), float32(pos.Y)))
+func (mm *MiniMap) renderRect(size, pos vector2.Vector2, rectColor, borderColor color.Color, borderWidth float64) {
+	rect := canvas.NewRectangle(rectColor)
+	draw.Rect(rect, size, pos, rectColor, borderColor, borderWidth)
 	mm.AddSprites(rect)
 }
 
+func getColor(value uint8) color.Color {
+	if value != 0 {
+		return WALL_COLOR
+	} else {
+		return EMPTY_COLOR
+	}
+}
+
+func getPos(idxI, idxJ int) vector2.Vector2 {
+	return vector2.Vector2{
+		X: global.GetPadX(cell.X * float64(idxI)),
+		Y: global.GetPadY(cell.Y * float64(idxJ)),
+	}
+}
 func (mm *MiniMap) AddSprites(obj fyne.CanvasObject) {
 	mm.sprites = append(mm.sprites, obj)
 }
