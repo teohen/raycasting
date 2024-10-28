@@ -57,6 +57,6 @@ func main() {
 	}()
 
 	w.SetContent(cont)
-	w.Resize(fyne.NewSize(global.WINDOW_WIDTH, global.WINDOW_HEIGHT))
+	w.Resize(fyne.NewSize(global.WINDOW_WIDTH*1.15, global.WINDOW_HEIGHT))
 	w.ShowAndRun()
 }

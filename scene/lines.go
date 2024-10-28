@@ -41,22 +41,22 @@ func (sl *SceneLine) setColor(distance float64) {
 	var r, g, b, a uint8
 	r, g, b, a = 0, 0, 0, 0
 	if distance > 0 {
-		r = uint8(30 + distance*0.3)
-		g = uint8(30 + distance*0.3)
-		b = uint8(30 + distance*0.3)
+		r = uint8(30 + distance*0.42)
+		g = uint8(30 + distance*0.42)
+		b = uint8(30 + distance*0.42)
 		a = uint8(255)
 	}
 	sl.color = color.RGBA{r, g, b, a}
 }
 
 func (sl *SceneLine) setFrom(lineLength float64, i, lineW int) {
-	sl.from.X = global.PADDING_X + float64(i*lineW)
-	sl.from.Y = global.PADDING_Y + (global.WALL_HEIGHT-lineLength)*0.5
+	sl.from.X = 100 + global.PADDING_X + float64(i*lineW)
+	sl.from.Y = 200 + global.PADDING_Y + (global.WALL_HEIGHT-lineLength)*0.5
 }
 
 func (sl *SceneLine) setTo(lineLength float64, i, lineW int) {
-	sl.to.X = global.PADDING_X + float64(i*lineW)
-	sl.to.Y = global.PADDING_Y + lineLength
+	sl.to.X = 100 + global.PADDING_X + float64(i*lineW)
+	sl.to.Y = 200 + global.PADDING_Y + lineLength
 }
 func (sl *SceneLine) setWidth(w int) {
 	sl.width = w

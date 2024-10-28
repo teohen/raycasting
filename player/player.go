@@ -12,7 +12,7 @@ import (
 	vector2 "github.com/teohen/FPV/vector"
 )
 
-var CIRCLE_COLOR = color.RGBA{255, 0, 0, 90}
+var CIRCLE_COLOR = color.RGBA{255, 0, 0, 255}
 var VISION_LINE_COLOR = color.RGBA{0, 255, 0, 255}
 
 type PlayerSprite struct {

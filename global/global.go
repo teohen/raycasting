@@ -13,7 +13,7 @@ type Global struct {
 const WINDOW_HEIGHT = 800
 const WINDOW_WIDTH = 800
 
-const WALL_HEIGHT = WINDOW_HEIGHT * 0.9
+const WALL_HEIGHT = WINDOW_HEIGHT * 0.7
 const WALL_HEIGHT_MARGIN = WINDOW_HEIGHT * 0.3
 
 const CELL_W = 40

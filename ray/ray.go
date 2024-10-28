@@ -9,7 +9,7 @@ import (
 	vector2 "github.com/teohen/FPV/vector"
 )
 
-var RAY_COLOR = color.RGBA{0, 0, 255, 255}
+var RAY_COLOR = color.RGBA{0, 0, 255, 0}
 
 type Ray struct {
 	from   vector2.Vector2
